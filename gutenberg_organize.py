@@ -45,6 +45,10 @@ CATALOG_URL = "https://www.gutenberg.org/cache/epub/feeds/pg_catalog.csv"
 
 BUCKET_SIZE = 1000
 VARIANTS_DIR = "_variants"
+# Non-ebook .txt files found in upstream book directories (lowercased).
+# Gutenberg now ships a LICENSE.txt beside each book; a '*.txt' rsync filter
+# would otherwise file ~50k copies of it as variants.
+IGNORED_NAMES = {"license.txt"}
 MAX_NAME_CHARS = 150
 # ext4/btrfs/xfs cap a filename at 255 *bytes*, and 150 non-Latin characters
 # can exceed that in UTF-8, so both limits apply.
@@ -236,6 +240,7 @@ class SourceFile:
     mtime: float
     sha256: str = ""
     misplaced: bool = False  # sits outside its ID dir; ID came from the filename
+    ignored: bool = False  # boilerplate, not an ebook (see IGNORED_NAMES)
 
 
 def find_id_dir(parts: tuple[str, ...]) -> int | None:
@@ -293,6 +298,7 @@ def scan(source: Path) -> list[SourceFile]:
                 size=st.st_size,
                 mtime=st.st_mtime,
                 misplaced=misplaced,
+                ignored=name.lower() in IGNORED_NAMES,
             ))
     return files
 
@@ -395,7 +401,10 @@ def plan(files: list[SourceFile], catalog: dict[int, Book], dest: Path) -> list[
     entries: list[Entry] = []
     by_id: dict[int, list[SourceFile]] = defaultdict(list)
     for sf in files:
-        if sf.ebook_id is None:
+        if sf.ignored:
+            entries.append(Entry(sf, status="ignored",
+                                 note="license boilerplate, not an ebook"))
+        elif sf.ebook_id is None:
             entries.append(Entry(sf, status="unparsed",
                                  note="could not determine ebook ID from path"))
         else:
@@ -663,8 +672,9 @@ def main(argv: list[str] | None = None) -> int:
     catalog = load_catalog(args.catalog)
     print(f"scanning {source}", file=sys.stderr)
     files = scan(source)
-    print(f"hashing {len(files)} files", file=sys.stderr)
-    hash_all(files, args.workers)
+    to_hash = [f for f in files if not f.ignored]
+    print(f"hashing {len(to_hash)} files", file=sys.stderr)
+    hash_all(to_hash, args.workers)
     entries = plan(files, catalog, dest)
     if args.current_only:
         for e in entries:

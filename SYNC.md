@@ -139,8 +139,9 @@ spread the load on their servers.
 `txt/` is a **filtered copy of the main collection** that holds only the
 UTF-8 text files (`*-0.txt`). Every one of its ~70k files matches that
 pattern. Keep that filter when you sync. Upstream, each book folder now also
-contains a `LICENSE.txt`, and a broader `*.txt` filter would pull in about 50k
-of them, which `gutenberg_organize.py` would then file as variants.
+contains a `LICENSE.txt`, and a broader `*.txt` filter would download about
+50k of them. `gutenberg_organize.py` skips them (status `ignored`), but there's
+no reason to download them in the first place.
 
 **1. Preview** what would change (`-n` = dry run, nothing is downloaded or deleted):
 

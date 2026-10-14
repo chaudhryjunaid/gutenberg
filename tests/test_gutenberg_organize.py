@@ -41,6 +41,10 @@ MIRROR = {
     "cache/stray.txt": b"no id here",
     # One level too high, and newer than the real file: must stay a variant.
     "1/3/4/1342-0.txt": b"pride stray copy",
+    # Upstream license boilerplate beside each book: never an ebook.
+    "1/3/4/1342/LICENSE.txt": b"license boilerplate",
+    "8/84/LICENSE.TXT": b"license boilerplate",
+    "LICENSE.txt": b"license boilerplate",
 }
 
 
@@ -235,7 +239,7 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(self.run_tool("--apply"), 0)
         self.assertEqual(self.library(), before)
         statuses = {r["status"] for r in self.rows()}
-        self.assertEqual(statuses, {"exists", "duplicate", "unparsed"})
+        self.assertEqual(statuses, {"exists", "duplicate", "unparsed", "ignored"})
 
     def test_never_overwrites(self):
         target = self.dest / "01000-01999" / "1342 - Pride and Prejudice - Jane Austen.txt"
@@ -260,6 +264,15 @@ class EndToEnd(unittest.TestCase):
         self.run_tool("--apply")
         self.assertEqual([p.name for p in old.parent.glob("84 *")],
                          ["84 - Frankenstein - Mary Wollstonecraft Shelley.txt"])
+
+    def test_license_files_ignored(self):
+        self.assertEqual(self.run_tool("--apply"), 0)
+        rows = self.by_source()
+        for rel in ("1/3/4/1342/LICENSE.txt", "8/84/LICENSE.TXT", "LICENSE.txt"):
+            self.assertEqual(rows[rel]["status"], "ignored", rel)
+            self.assertEqual(rows[rel]["dest_path"], "", rel)
+            self.assertEqual(rows[rel]["sha256"], "", rel)  # not even hashed
+        self.assertFalse(any("LICENSE" in p for p in self.library()))
 
     def test_stray_never_outranks_real_file(self):
         self.run_tool()

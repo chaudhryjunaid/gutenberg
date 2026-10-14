@@ -85,6 +85,7 @@ Files already in the library are recognized by hash (`exists`) and left alone.
 | `skipped`   | variant left out by `--current-only` |
 | `conflict`  | the target or the ID is already taken by *different* content; nothing touched |
 | `unparsed`  | no ebook ID could be determined |
+| `ignored`   | not an ebook (Gutenberg's per-book `LICENSE.txt`); not hashed or placed |
 | `error`     | I/O failure; see `note` |
 
 ## Retiring the mirror
