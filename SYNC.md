@@ -161,7 +161,8 @@ python3 gutenberg_organize.py --fetch-catalog && python3 gutenberg_organize.py -
 ```
 
 Books that are already in place are skipped, so only new or changed books are
-added. See [RUN.md](RUN.md).
+added. See [RUN.md](RUN.md). To download the catalog without the organizer,
+see [Downloading the catalog](#downloading-the-catalog).
 
 ### Notes
 
@@ -178,6 +179,32 @@ added. See [RUN.md](RUN.md).
   would rewrite the shared file instead (see the cautions in [RUN.md](RUN.md)).
 - **Mind the trailing slash.** `txt/` means "into this directory". The
   source has no trailing slash, so the module's contents land directly in it.
+
+### Downloading the catalog
+
+`metadata/pg_catalog.csv` is Gutenberg's catalog: one row per book with its
+ID, title, authors, language and subjects. The organizer uses it to name
+files. Don't confuse it with `manifest.csv`, which the organizer generates.
+Gutenberg updates the catalog weekly. `--fetch-catalog` in step 3 downloads
+it for you, but you can also fetch it yourself:
+
+```sh
+cd ~/media/gutenberg
+mkdir -p metadata
+curl -fL --retry 3 -o metadata/pg_catalog.csv.part \
+  https://www.gutenberg.org/cache/epub/feeds/pg_catalog.csv \
+  && head -n 1 metadata/pg_catalog.csv.part | grep -q '^Text#,' \
+  && mv metadata/pg_catalog.csv.part metadata/pg_catalog.csv
+```
+
+The command downloads to a `.part` file (git-ignored). It replaces the
+current catalog only if the download succeeds and the first line is the
+catalog header (`Text#,…`). Otherwise the old catalog stays as it was. That's
+the same safeguard `--fetch-catalog` uses.
+
+`metadata/pg_catalog.csv` is tracked in git, so a refresh shows up in
+`git status`. Commit it if you want the repo to record which catalog the
+library was built from.
 
 ### Automating it (weekly)
 
