@@ -47,7 +47,8 @@ The mirror in `txt/` is never modified.
 
 Re-running `--apply` is safe. Books already in place are recognized and
 skipped, so you can run it again after each `rsync` or catalog refresh, and
-it only adds or renames what changed.
+it only adds or renames what changed. See [SYNC.md](SYNC.md) for how to pull
+updates from Gutenberg.
 
 ## Cautions
 
